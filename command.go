@@ -80,6 +80,9 @@ func Long(s string)  { root.Long = s }
 
 func init() {
 	root.Name = path.Base(os.Args[0])
+	root.stdin = os.Stdin
+	root.stdout = os.Stdout
+	root.stderr = os.Stderr
 }
 
 func Stdin(r io.Reader) {
@@ -111,14 +114,10 @@ func (cmd *Command) execute(args []string) (int, error) {
 		panic(fmt.Sprintf("invalid command %q", cmd.Name))
 	}
 
-	if cmd.stdin == nil {
-		cmd.stdin = os.Stdin
-	}
-	if cmd.stdout == nil {
-		cmd.stdout = os.Stdout
-	}
-	if cmd.stderr == nil {
-		cmd.stderr = os.Stderr
+	if cmd.parent != nil {
+		cmd.stdin = cmd.parent.stdin
+		cmd.stdout = cmd.parent.stdout
+		cmd.stderr = cmd.parent.stderr
 	}
 
 	var err error
@@ -159,9 +158,6 @@ func (cmd *Command) execute(args []string) (int, error) {
 		}
 		return helpForCommand(cmd, fs)
 	}
-	subcommand.stdin = cmd.stdin
-	subcommand.stdout = cmd.stdout
-	subcommand.stderr = cmd.stderr
 	return subcommand.execute(args[1:])
 }
 
