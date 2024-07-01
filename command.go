@@ -22,6 +22,7 @@ type CommandFunc func(
 	ctx context.Context,
 	stdout io.Writer,
 	fs *flag.FlagSet,
+	getenv func(string) string,
 	stdin io.Reader,
 	stderr io.Writer,
 ) (int, error)
@@ -101,11 +102,11 @@ func Run(args ...string) (int, error) {
 	if len(args) == 0 {
 		args = os.Args
 	}
-	return root.execute(args)
+	return root.Execute(args)
 }
 
 // args first item is the command name, program name for the root command.
-func (cmd *Command) execute(args []string) (int, error) {
+func (cmd *Command) Execute(args []string) (int, error) {
 	if len(args) == 0 {
 		panic(fmt.Sprintf("invalid execute %q", cmd.Name))
 	}
@@ -135,7 +136,7 @@ func (cmd *Command) execute(args []string) (int, error) {
 
 	if len(args) == 1 {
 		if cmd.Func != nil {
-			return cmd.Func(context.TODO(), cmd.stdout, fs, cmd.stdin, cmd.stderr)
+			return cmd.Func(context.TODO(), cmd.stdout, fs, os.Getenv, cmd.stdin, cmd.stderr)
 		}
 		return helpForCommand(cmd, fs)
 	}
@@ -154,11 +155,11 @@ func (cmd *Command) execute(args []string) (int, error) {
 		// fmt.Fprintf(os.Stderr, "[ERROR] '%s' is not a recognized subcommand; see 'help'\n", args[1])
 		// os.Exit(ExitCodeSerious)
 		if cmd.Func != nil {
-			return cmd.Func(context.TODO(), cmd.stdout, fs, cmd.stdin, cmd.stderr)
+			return cmd.Func(context.TODO(), cmd.stdout, fs, os.Getenv, cmd.stdin, cmd.stderr)
 		}
 		return helpForCommand(cmd, fs)
 	}
-	return subcommand.execute(args[1:])
+	return subcommand.Execute(args[1:])
 }
 
 // RegisterChild registers the command cmd. cmd.Name must be unique and
